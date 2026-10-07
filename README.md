@@ -1,12 +1,17 @@
-# Scanner Pro v0.1
-PWA thử nghiệm tối ưu iPhone: chụp nhiều trang, nhập ảnh, xử lý ảnh, xoay/xóa/sắp trang, lưu tài liệu cục bộ và xuất PDF nhiều trang.
+# Scanner Pro v0.2
 
-## Chạy trên GitHub Pages
-1. Upload toàn bộ file vào nhánh `main`.
-2. GitHub → Settings → Pages → Deploy from a branch → `main` / `(root)` → Save.
-3. Mở URL Pages bằng Safari trên iPhone → Share → Add to Home Screen.
+PWA scanner cho iPhone, chạy hoàn toàn phía client.
 
-## Lưu ý v0.1
-- Camera dùng camera picker chuẩn iOS/PWA.
-- “Tự động” hiện xử lý tương phản/độ sáng; nhận diện biên + nắn phối cảnh tự động sẽ là engine của v0.2.
-- PDF được tạo hoàn toàn trên thiết bị, không upload ảnh.
+## v0.2
+- Quét/chụp và nhập nhiều ảnh.
+- Biên tập từng trang: xoay, crop 4 điểm thủ công, làm rõ, Gốc/Tự động/Tài liệu/Trắng đen/Xám.
+- Thumbnail nhiều trang.
+- Đặt tên, phân loại Công việc/Cá nhân/Giấy tờ/Báo cáo.
+- Kho tài liệu cục bộ, tìm kiếm/lọc nhóm, viewer nhiều trang, đổi tên.
+- Tạo PDF A4 nhiều trang với 3 mức chất lượng và iOS Share Sheet/Save to Files.
+- PWA standalone, service worker cache v0.2, không upload tài liệu.
+
+## Giới hạn kỹ thuật
+Crop 4 điểm trong v0.2 là chỉnh vùng tài liệu và crop theo vùng bao; perspective homography/nắn phối cảnh thực sự và auto edge detection từ camera live chưa được giả lập. Đây là hạng mục scanner engine tiếp theo.
+
+GitHub Pages: Settings → Pages → Deploy from branch → main /(root).
