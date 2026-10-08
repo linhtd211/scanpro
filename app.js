@@ -71,4 +71,4 @@ function cropMove(e){if(drag<0)return;e.preventDefault();let p=svgPoint(e);cropP
 function cropUp(){drag=-1}
 let cropLayer=$('#cropSvg');window.addEventListener('resize',()=>{if(!$('#cropModal').classList.contains('hidden')){fitCropOverlay();drawCrop()}});cropLayer.onpointerdown=cropDown;cropLayer.onpointermove=cropMove;cropLayer.onpointerup=cropUp;cropLayer.onpointercancel=cropUp;
 $('#cropCancel').onclick=()=>$('#cropModal').classList.add('hidden');$('#cropOk').onclick=async()=>{let p=pages[current];p.corners=cropPts.map(x=>[x[0]/1000,x[1]/1000]);ensureMaster(p);p.corners=cropPts.map(x=>[x[0]/1000,x[1]/1000]);let oldFilter=p.filter;p.filter='original';let z=await processed(p,.9);p.filter=oldFilter;p.src=z.url;p.warn='';$('#cropModal').classList.add('hidden');renderEditor();toast('Đã lưu khung nắn · ảnh gốc không đổi')};
-DB.open().then(refresh);if('serviceWorker'in navigator)navigator.serviceWorker.register('./sw.js?v=0532');
+DB.open().then(refresh);if('serviceWorker'in navigator)navigator.serviceWorker.register('./sw.js?v=053stable');
