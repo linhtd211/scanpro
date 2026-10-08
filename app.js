@@ -28,13 +28,32 @@ $('#saveDoc').onclick=async()=>{let name=$('#docName').value.trim()||'Tài liệ
 function renderDocs(){let q=$('#search').value.toLowerCase(),d=cacheDocs.filter(x=>(activeCat==='Tất cả'||x.cat===activeCat)&&x.name.toLowerCase().includes(q));$('#empty').style.display=d.length?'none':'flex';$('#docs').innerHTML=d.map(x=>'<div class="doc" data-id="'+x.id+'"><img src="'+x.pages[0].src+'"><div class="meta"><b>'+x.name.replace(/</g,'&lt;')+'</b><small>'+x.pages.length+' trang · '+x.date+'</small><span class="tag">'+x.cat+'</span></div><span>›</span></div>').join('');$$('.doc').forEach(x=>x.onclick=()=>openDoc(+x.dataset.id))}
 $('#search').oninput=renderDocs;$$('#chips .chip').forEach(b=>b.onclick=()=>{activeCat=b.dataset.cat;$$('#chips .chip').forEach(x=>x.classList.toggle('on',x===b));renderDocs()});
 function openDoc(id){opened=cacheDocs.find(x=>x.id===id);if(!opened)return;$('#viewerTitle').textContent=opened.name;$('#viewerPages').innerHTML=opened.pages.map(p=>'<img src="'+p.src+'">').join('');screen('viewer')}$('#viewerBack').onclick=()=>screen('home');$('#viewerShare').onclick=()=>sharePDF(opened.pages,opened.name);$('#viewerMenu').onclick=async()=>{if(!opened)return;let n=prompt('Đổi tên tài liệu',opened.name);if(n===null)return;opened.name=n.trim()||opened.name;await DB.put(opened);await refresh();$('#viewerTitle').textContent=opened.name;toast('Đã đổi tên')};
-$('#crop').onclick=openCrop;function openCrop(){let p=pages[current];$('#cropImg').src=p.src;let q=p.corners||[[.05,.05],[.95,.05],[.95,.95],[.05,.95]];cropPts=q.map(x=>[x[0]*1000,x[1]*1000]);$('#cropModal').classList.remove('hidden');$('#cropImg').onload=()=>drawCrop();requestAnimationFrame(drawCrop)}
+$('#crop').onclick=openCrop;
+function fitCropOverlay(){
+ let st=$('#cropStage'),im=$('#cropImg'),svg=$('#cropSvg');
+ if(!st||!im||!svg||!im.naturalWidth)return;
+ let sr=st.getBoundingClientRect(),ir=im.getBoundingClientRect();
+ svg.style.inset='auto';
+ svg.style.left=(ir.left-sr.left)+'px';
+ svg.style.top=(ir.top-sr.top)+'px';
+ svg.style.width=ir.width+'px';
+ svg.style.height=ir.height+'px';
+}
+function openCrop(){
+ let p=pages[current];
+ $('#cropImg').src=masterSrc(p);
+ let q=p.corners||[[.05,.05],[.95,.05],[.95,.95],[.05,.95]];
+ cropPts=q.map(x=>[x[0]*1000,x[1]*1000]);
+ $('#cropModal').classList.remove('hidden');
+ $('#cropImg').onload=()=>{fitCropOverlay();drawCrop()};
+ requestAnimationFrame(()=>{fitCropOverlay();drawCrop()})
+}
 function drawCrop(){$('#cropSvg').setAttribute('viewBox','0 0 1000 1000');$('#cropPoly').setAttribute('points',cropPts.map(p=>p.join(',')).join(' '));$$('#cropSvg circle').forEach((c,i)=>{c.setAttribute('cx',cropPts[i][0]);c.setAttribute('cy',cropPts[i][1])})}
 let drag=-1;
 function svgPoint(e){let svg=$('#cropSvg'),pt=svg.createSVGPoint();pt.x=e.clientX;pt.y=e.clientY;let m=svg.getScreenCTM();if(!m)return{x:0,y:0};pt=pt.matrixTransform(m.inverse());return{x:Math.max(0,Math.min(1000,pt.x)),y:Math.max(0,Math.min(1000,pt.y))}}
 function cropDown(e){e.preventDefault();let p=svgPoint(e),best=-1,bestD=1e9;for(let i=0;i<cropPts.length;i++){let dx=cropPts[i][0]-p.x,dy=cropPts[i][1]-p.y,d=Math.hypot(dx,dy);if(d<bestD){bestD=d;best=i}}let svg=$('#cropSvg'),rect=svg.getBoundingClientRect(),hit=120*1000/Math.max(rect.width,rect.height);if(best<0||bestD>hit)return;drag=best;cropPts[drag]=[p.x,p.y];drawCrop();try{svg.setPointerCapture(e.pointerId)}catch(_){}}
 function cropMove(e){if(drag<0)return;e.preventDefault();let p=svgPoint(e);cropPts[drag]=[p.x,p.y];drawCrop()}
 function cropUp(){drag=-1}
-let cropLayer=$('#cropSvg');cropLayer.onpointerdown=cropDown;cropLayer.onpointermove=cropMove;cropLayer.onpointerup=cropUp;cropLayer.onpointercancel=cropUp;
+let cropLayer=$('#cropSvg');window.addEventListener('resize',()=>{if(!$('#cropModal').classList.contains('hidden')){fitCropOverlay();drawCrop()}});cropLayer.onpointerdown=cropDown;cropLayer.onpointermove=cropMove;cropLayer.onpointerup=cropUp;cropLayer.onpointercancel=cropUp;
 $('#cropCancel').onclick=()=>$('#cropModal').classList.add('hidden');$('#cropOk').onclick=async()=>{let p=pages[current];p.corners=cropPts.map(x=>[x[0]/1000,x[1]/1000]);ensureMaster(p);p.corners=cropPts.map(x=>[x[0]/1000,x[1]/1000]);let oldFilter=p.filter;p.filter='original';let z=await processed(p,.9);p.filter=oldFilter;p.src=z.url;p.warn='';$('#cropModal').classList.add('hidden');renderEditor();toast('Đã lưu khung nắn · ảnh gốc không đổi')};
-DB.open().then(refresh);if('serviceWorker'in navigator)navigator.serviceWorker.register('./sw.js?v=0521');
+DB.open().then(refresh);if('serviceWorker'in navigator)navigator.serviceWorker.register('./sw.js?v=0522');
