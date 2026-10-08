@@ -29,8 +29,9 @@ $('#crop').onclick=openCrop;function cropRect(){let stage=$('#cropStage').getBou
 function openCrop(){let p=pages[current];$('#cropImg').src=p.src;let q=p.corners||[[.05,.05],[.95,.05],[.95,.95],[.05,.95]];cropPts=q.map(x=>[x[0],x[1]]);$('#cropModal').classList.remove('hidden');$('#cropImg').onload=()=>drawCrop();requestAnimationFrame(drawCrop)}
 function drawCrop(){let r=cropRect(),pts=cropPts.map(p=>[r.x+p[0]*r.w,r.y+p[1]*r.h]);$('#cropPoly').setAttribute('points',pts.map(p=>p.join(',')).join(' '));$('#cropSvg circle').forEach((c,i)=>{c.setAttribute('cx',pts[i][0]);c.setAttribute('cy',pts[i][1])});$('#cropSvg').setAttribute('viewBox','0 0 '+r.stage.width+' '+r.stage.height)}
 let drag=-1;
-function cropPointFromEvent(e){let r=cropRect(),x=(e.clientX-r.stage.left-r.x)/r.w,y=(e.clientY-r.stage.top-r.y)/r.h;return{x:Math.max(0,Math.min(1,x)),y:Math.max(0,Math.min(1,y)),r:r}}
-function cropDown(e){e.preventDefault();let p=cropPointFromEvent(e),best=-1,bestD=1e9;for(let i=0;i<cropPts.length;i++){let dx=(cropPts[i][0]-p.x)*p.r.w,dy=(cropPts[i][1]-p.y)*p.r.h,d=Math.sqrt(dx*dx+dy*dy);if(d<bestD){bestD=d;best=i}}if(best<0||bestD>110)return;drag=best;cropPts[drag]=[p.x,p.y];drawCrop();try{e.currentTarget.setPointerCapture(e.pointerId)}catch(err){}}
+function cropPointFromEvent(e){let r=cropRect(),sx=e.clientX-r.stage.left,sy=e.clientY-r.stage.top,x=(sx-r.x)/r.w,y=(sy-r.y)/r.h;return{x:Math.max(0,Math.min(1,x)),y:Math.max(0,Math.min(1,y)),sx:sx,sy:sy,r:r}}
+function cropScreenPoints(r){return cropPts.map(q=>({x:r.x+q[0]*r.w,y:r.y+q[1]*r.h}))}
+function cropDown(e){e.preventDefault();let p=cropPointFromEvent(e),pts=cropScreenPoints(p.r),best=-1,bestD=1e9;for(let i=0;i<pts.length;i++){let dx=pts[i].x-p.sx,dy=pts[i].y-p.sy,d=Math.sqrt(dx*dx+dy*dy);if(d<bestD){bestD=d;best=i}}if(best<0||bestD>110)return;drag=best;cropPts[drag]=[p.x,p.y];drawCrop();try{e.currentTarget.setPointerCapture(e.pointerId)}catch(err){}}
 function cropMove(e){if(drag<0)return;e.preventDefault();let p=cropPointFromEvent(e);cropPts[drag]=[p.x,p.y];drawCrop()}
 function cropUp(e){drag=-1}
 let cropLayer=$('#cropSvg');cropLayer.addEventListener('pointerdown',cropDown,{passive:false});cropLayer.addEventListener('pointermove',cropMove,{passive:false});cropLayer.addEventListener('pointerup',cropUp,{passive:false});cropLayer.addEventListener('pointercancel',cropUp,{passive:false});
