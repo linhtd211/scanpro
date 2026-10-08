@@ -1,5 +1,5 @@
-const C='scanner-pro-v053stable7';
-const SHELL=['./style.css?v=053stable7','./app.js?v=053stable7','./icon.svg','./manifest.webmanifest?v=053stable7'];
+const C='scanner-pro-v053stable8';
+const SHELL=['./style.css?v=053stable8','./app.js?v=053stable8','./icon.svg','./manifest.webmanifest?v=053stable8'];
 
 self.addEventListener('install',e=>{
   self.skipWaiting();
