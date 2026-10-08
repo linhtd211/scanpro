@@ -7,18 +7,16 @@ function loadImg(src){return new Promise(r=>{let i=new Image;i.onload=()=>r(i);i
 function masterSrc(p){return p.master||p.orig||p.src}function ensureMaster(p){if(!p.master)p.master=p.orig||p.src;return p.master}
 function detectPaper(c){let w=c.width,h=c.height,x=c.getContext('2d'),d=x.getImageData(0,0,w,h).data,lum=new Float32Array(w*h),sum=0;for(let i=0,p=0;i<d.length;i+=4,p++){let v=.299*d[i]+.587*d[i+1]+.114*d[i+2];lum[p]=v;sum+=v}let th=Math.max(105,sum/lum.length*1.08),xs=[],ys=[];for(let y=1;y<h-1;y+=2)for(let xx=1;xx<w-1;xx+=2){let p=y*w+xx;if(lum[p]>th){xs.push(xx);ys.push(y)}}if(xs.length<w*h*.08)return null;xs.sort((a,b)=>a-b);ys.sort((a,b)=>a-b);let x0=xs[Math.floor(xs.length*.04)],x1=xs[Math.floor(xs.length*.96)],y0=ys[Math.floor(ys.length*.04)],y1=ys[Math.floor(ys.length*.96)];if((x1-x0)*(y1-y0)<w*h*.28)return null;return[[x0/w,y0/h],[x1/w,y0/h],[x1/w,y1/h],[x0/w,y1/h]]}
 function autoPaperCrop(c){
- let max=520,sc=Math.min(1,max/Math.max(c.width,c.height)),w=Math.max(120,Math.round(c.width*sc)),h=Math.max(120,Math.round(c.height*sc)),t=document.createElement('canvas');t.width=w;t.height=h;let x=t.getContext('2d');x.drawImage(c,0,0,w,h),d=x.getImageData(0,0,w,h).data;
- const rgb=(xx,y)=>{let p=(y*w+xx)*4;return[d[p],d[p+1],d[p+2]]},samples=[];
- for(let xx=0;xx<w;xx+=Math.max(1,Math.round(w/60))){samples.push(rgb(xx,2),rgb(xx,h-3))}
- for(let y=0;y<h;y+=Math.max(1,Math.round(h/60))){samples.push(rgb(2,y),rgb(w-3,y))}
- samples.sort((a,b)=>(a[0]+a[1]+a[2])-(b[0]+b[1]+b[2]));let mid=samples[Math.floor(samples.length/2)],br=mid[0],bg=mid[1],bb=mid[2];
- const score=(xx,y)=>{let p=(y*w+xx)*4,dr=d[p]-br,dg=d[p+1]-bg,db=d[p+2]-bb,lum=(d[p]+d[p+1]+d[p+2])/3,bl=(br+bg+bb)/3;return Math.sqrt(dr*dr+dg*dg+db*db)+Math.max(0,lum-bl)*.45};
- let col=new Float32Array(w),row=new Float32Array(h);
- for(let xx=0;xx<w;xx++){let s=0,n=0;for(let y=Math.round(h*.12);y<h*.88;y+=3){s+=score(xx,y);n++}col[xx]=s/n}
- for(let y=0;y<h;y++){let s=0,n=0;for(let xx=Math.round(w*.12);xx<w*.88;xx+=3){s+=score(xx,y);n++}row[y]=s/n}
- const bounds=a=>{let edgeN=Math.max(5,Math.round(a.length*.08)),base=0;for(let i=0;i<edgeN;i++)base+=(a[i]+a[a.length-1-i])/2;base/=edgeN;let peak=Math.max(...a),th=base+(peak-base)*.34,l=-1,r=-1,run=Math.max(3,Math.round(a.length*.012)),ok=i=>{let n=0;for(let k=0;k<run&&i+k<a.length;k++)if(a[i+k]>th)n++;return n>=run-1};for(let i=2;i<a.length*.48;i++)if(ok(i)){l=i;break}for(let i=a.length-3;i>a.length*.52;i--){let n=0;for(let k=0;k<run&&i-k>=0;k++)if(a[i-k]>th)n++;if(n>=run-1){r=i;break}}return[l,r,peak-base]};
- let [l,r,cConf]=bounds(col),[top,bot,rConf]=bounds(row);if(l<0||r<0||top<0||bot<0||r-l<w*.48||bot-top<h*.48||cConf<12||rConf<12)return null;
- let m=Math.max(2,Math.round(Math.min(w,h)*.004));l+=m;r-=m;top+=m;bot-=m;
+ let max=640,sc=Math.min(1,max/Math.max(c.width,c.height)),w=Math.max(140,Math.round(c.width*sc)),h=Math.max(140,Math.round(c.height*sc)),t=document.createElement('canvas');t.width=w;t.height=h;let x=t.getContext('2d');x.drawImage(c,0,0,w,h);let d=x.getImageData(0,0,w,h).data,L=new Float32Array(w*h),S=new Float32Array(w*h);
+ for(let y=0;y<h;y++)for(let xx=0;xx<w;xx++){let p=(y*w+xx)*4,r=d[p],g=d[p+1],b=d[p+2],i=y*w+xx;L[i]=.299*r+.587*g+.114*b;S[i]=Math.max(r,g,b)-Math.min(r,g,b)}
+ let colE=new Float32Array(w),rowE=new Float32Array(h),colP=new Float32Array(w),rowP=new Float32Array(h);
+ for(let xx=2;xx<w-2;xx++){let e=0,p=0,n=0;for(let y=Math.round(h*.08);y<h*.92;y+=2){let i=y*w+xx;e+=Math.abs(L[i+1]-L[i-1]);p+=(L[i]>105?1:0)+(S[i]<45&&L[i]>85?.35:0);n++}colE[xx]=e/n;colP[xx]=p/n}
+ for(let y=2;y<h-2;y++){let e=0,p=0,n=0;for(let xx=Math.round(w*.08);xx<w*.92;xx+=2){let i=y*w+xx;e+=Math.abs(L[i+w]-L[i-w]);p+=(L[i]>105?1:0)+(S[i]<45&&L[i]>85?.35:0);n++}rowE[y]=e/n;rowP[y]=p/n}
+ const side=(E,P,from,to,dir)=>{let best=-1,bs=-1,span=Math.max(3,Math.round(E.length*.01));for(let i=from;dir>0?i<=to:i>=to;i+=dir){let before=0,after=0,ee=0;for(let k=1;k<=span;k++){let a=i-dir*k,b=i+dir*k;if(a>=0&&a<P.length)before+=P[a];if(b>=0&&b<P.length)after+=P[b];if(i-k>=0&&i+k<E.length)ee+=E[i-k]+E[i+k]}let contrast=(after-before)/span,score=contrast*18+ee/(span*2);if(score>bs){bs=score;best=i}}return bs>5?best:-1};
+ let l=side(colE,colP,Math.round(w*.005),Math.round(w*.42),1),r=side(colE,colP,Math.round(w*.995),Math.round(w*.58),-1),top=side(rowE,rowP,Math.round(h*.005),Math.round(h*.42),1),bot=side(rowE,rowP,Math.round(h*.995),Math.round(h*.58),-1);
+ if(l<0||r<0||top<0||bot<0||r-l<w*.46||bot-top<h*.46)return null;
+ // Safe inward trim: ~0.7% of short side, enough to remove black/background slivers.
+ let m=Math.max(3,Math.round(Math.min(w,h)*.007));l+=m;r-=m;top+=m;bot-=m;
  return [[l/w,top/h],[r/w,top/h],[r/w,bot/h],[l/w,bot/h]]
 }
 function quality(c){let w=120,h=Math.max(20,Math.round(120*c.height/c.width)),t=document.createElement('canvas');t.width=w;t.height=h;let x=t.getContext('2d');x.drawImage(c,0,0,w,h);let d=x.getImageData(0,0,w,h).data,m=0,a=[];for(let i=0;i<d.length;i+=4){let v=(d[i]+d[i+1]+d[i+2])/3;a.push(v);m+=v}m/=a.length;if(m<55)return'Quá tối';if(m>242)return'Quá sáng';let v=0,n=0;for(let y=1;y<h-1;y++)for(let z=1;z<w-1;z++){let p=y*w+z,L=4*a[p]-a[p-1]-a[p+1]-a[p-w]-a[p+w];v+=L*L;n++}return v/n<55?'Có thể bị mờ':''}
@@ -87,4 +85,4 @@ function cropMove(e){if(drag<0)return;e.preventDefault();let p=svgPoint(e);cropP
 function cropUp(){drag=-1}
 let cropLayer=$('#cropSvg');window.addEventListener('resize',()=>{if(!$('#cropModal').classList.contains('hidden')){fitCropOverlay();drawCrop()}});cropLayer.onpointerdown=cropDown;cropLayer.onpointermove=cropMove;cropLayer.onpointerup=cropUp;cropLayer.onpointercancel=cropUp;
 $('#cropCancel').onclick=()=>$('#cropModal').classList.add('hidden');$('#cropOk').onclick=async()=>{let p=pages[current];p.corners=cropPts.map(x=>[x[0]/1000,x[1]/1000]);ensureMaster(p);p.corners=cropPts.map(x=>[x[0]/1000,x[1]/1000]);let oldFilter=p.filter;p.filter='original';let z=await processed(p,.9);p.filter=oldFilter;p.src=z.url;p.warn='';$('#cropModal').classList.add('hidden');renderEditor();toast('Đã lưu khung nắn · ảnh gốc không đổi')};
-DB.open().then(refresh);if('serviceWorker'in navigator)navigator.serviceWorker.register('./sw.js?v=053stable4');
+DB.open().then(refresh);if('serviceWorker'in navigator)navigator.serviceWorker.register('./sw.js?v=053stable5');
