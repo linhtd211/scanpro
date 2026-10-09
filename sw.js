@@ -1,5 +1,5 @@
-const C='scanner-pro-v053albumhq2';
-const SHELL=['./style.css?v=053albumhq','./app.js?v=053albumhq','./icon.svg','./manifest.webmanifest?v=053albumhq'];
+const C='scanner-pro-v053albumhq22';
+const SHELL=['./style.css?v=053albumhq2','./app.js?v=053albumhq2','./icon.svg','./manifest.webmanifest?v=053albumhq2'];
 
 self.addEventListener('install',e=>{
   self.skipWaiting();
