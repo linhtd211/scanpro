@@ -1,5 +1,5 @@
 const C='scanner-pro-v054local9';
-const SHELL=['./','./index.html','./style.css?v=054local7','./app.js?v=054local7','./icon.svg?v=054local9','./apple-touch-icon.png?v=054local9','./icon-192.png?v=054local9','./icon-512.png?v=054local9','./manifest.webmanifest?v=054local9'];
+const SHELL=['./','./index.html','./style.css?v=054local7','./app.js?v=054local7','./icon.svg?v=054local9','./manifest.webmanifest?v=054local9'];
 
 self.addEventListener('install',e=>{
   self.skipWaiting();
