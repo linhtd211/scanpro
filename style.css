@@ -32,3 +32,9 @@
 .pdfPreviewTop b{font-size:16px}
 #pdfPreviewFrame{width:100%;flex:1;min-height:0;border:0;background:#ddd}
 .pdfPreviewModal p{margin:0;padding:9px 16px;font-size:11px;color:#697487;text-align:center;background:#fff}
+
+/* Multi-page PDF preview on iPhone: continuous vertical scroll */
+.pdfPreviewPages{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;padding:14px 10px 24px;background:#dfe2e7;overscroll-behavior:contain}
+.pdfPreviewPage{max-width:680px;margin:0 auto 16px;background:#fff;box-shadow:0 2px 10px #0002;overflow:hidden}
+.pdfPreviewPageLabel{font-size:12px;font-weight:700;color:#516178;padding:8px 12px;background:#f8f9fb;border-bottom:1px solid #e8ebef}
+.pdfPreviewPage img{display:block;width:100%;height:auto;object-fit:contain}
