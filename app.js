@@ -32,7 +32,7 @@ $('#scanFab').onclick=$('#scanNav').onclick=()=>openCamera(true);$('#camClose').
    The original photo is never overwritten. Library is loaded only for this test branch. */
 let scanicModulePromise=null,scanicEnginePromise=null;
 function scanicLibrary(){
- if(!scanicModulePromise)scanicModulePromise=import('https://cdn.jsdelivr.net/npm/scanic@1.6.0/dist/scanic.js').catch(e=>{scanicModulePromise=null;throw e});
+ if(!scanicModulePromise)scanicModulePromise=import('./scanic.bundle.js').catch(e=>{scanicModulePromise=null;throw e});
  return scanicModulePromise;
 }
 async function scanicEngine(){
