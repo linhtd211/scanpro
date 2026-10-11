@@ -7,3 +7,6 @@
 
 /* v0.5.4: page order controls */
 #thumbs{align-items:flex-start;gap:10px}#thumbs .pageThumb{flex:0 0 72px;text-align:center}#thumbs .pageThumbImage{position:relative;display:inline-block}#thumbs .pageNumber{position:absolute;left:4px;top:4px;background:#087cf0;color:#fff;border-radius:6px;font-size:11px;padding:2px 5px}#thumbs .pageMove{display:flex;justify-content:space-between;gap:5px;margin-top:5px}#thumbs .pageMove button{background:#e6f1ff;color:#087cf0;border-radius:8px;font-size:23px;font-weight:700;line-height:30px;min-width:31px;height:32px}#thumbs .pageMove button:disabled{opacity:.3}#thumbs .pageThumb small{font-size:10px;display:block}
+
+/* Keep iOS file picker in DOM and hit-testable: display:none/hidden can suppress programmatic picker. */
+#picker{position:fixed;left:0;bottom:0;width:1px;height:1px;opacity:0;pointer-events:none;z-index:-1}
