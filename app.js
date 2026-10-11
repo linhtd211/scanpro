@@ -22,12 +22,20 @@ function autoPaperCrop(c){
  return [[l/w,top/h],[r/w,top/h],[r/w,bot/h],[l/w,bot/h]]
 }
 function detectImportCorners(image){
- const max=760,scale=Math.min(1,max/Math.max(image.width,image.height)),c=document.createElement('canvas');c.width=Math.max(80,Math.round(image.width*scale));c.height=Math.max(80,Math.round(image.height*scale));c.getContext('2d').drawImage(image,0,0,c.width,c.height);
- const pts=autoPaperCrop(c);if(!pts)return null;
- const xs=pts.map(p=>p[0]),ys=pts.map(p=>p[1]),left=Math.min(...xs),right=Math.max(...xs),top=Math.min(...ys),bottom=Math.max(...ys);
- // Conservative safety: never trim a page when the estimated boundary is too close to an edge or too small.
- if(left<.012||top<.012||right>.988||bottom>.988||(right-left)*(bottom-top)<.43)return null;
- return pts;
+ const size=640,k=Math.min(1,size/Math.max(image.width,image.height)),c=document.createElement('canvas');c.width=Math.max(40,Math.round(image.width*k));c.height=Math.max(40,Math.round(image.height*k));let w=c.width,h=c.height,ctx=c.getContext('2d',{willReadFrequently:true});ctx.drawImage(image,0,0,w,h);let d=ctx.getImageData(0,0,w,h).data;
+ const light=(x,y)=>{let p=(Math.round(y)*w+Math.round(x))*4;return .299*d[p]+.587*d[p+1]+.114*d[p+2]};
+ const crossing=(x,y,dx,dy,n)=>{let count=0;for(let i=0;i<n;i++){let xx=x+dx*i,yy=y+dy*i;if(xx<2||yy<2||xx>=w-2||yy>=h-2)break;if(light(xx,yy)>125){count++;if(count>=3)return[x+dx*(i-2),y+dy*(i-2)]}else count=0}return null};
+ // Find four paper boundaries along interior scan lines; interpolate their intersections.
+ const horizontal=[];for(let t of [.20,.35,.50,.65,.80]){let y=Math.round(h*t),a=crossing(2,y,1,0,w-4),b=crossing(w-3,y,-1,0,w-4);if(a&&b&&b[0]-a[0]>.55*w)horizontal.push([y,a[0],b[0]])}
+ const vertical=[];for(let t of [.20,.35,.50,.65,.80]){let x=Math.round(w*t),a=crossing(x,2,0,1,h-4),b=crossing(x,h-3,0,-1,h-4);if(a&&b&&b[1]-a[1]>.55*h)vertical.push([x,a[1],b[1]])}
+ if(horizontal.length<3||vertical.length<3)return null;
+ const fit=(rows,col)=>{let mx=0,my=0;for(let v of rows){mx+=v[0];my+=v[col]}mx/=rows.length;my/=rows.length;let num=0,den=0;for(let v of rows){num+=(v[0]-mx)*(v[col]-my);den+=(v[0]-mx)**2}let m=den?num/den:0;return[m,my-m*mx]};
+ let [ml,bl]=fit(horizontal,1),[mr,br]=fit(horizontal,2),[mt,bt]=fit(vertical,1),[mb,bb]=fit(vertical,2);
+ const meet=(mx,bx,my,by)=>{let den=1-mx*my;if(Math.abs(den)<.2)return null;let y=(my*bx+by)/den,x=mx*y+bx;return[x,y]};
+ let pts=[meet(ml,bl,mt,bt),meet(mr,br,mt,bt),meet(mr,br,mb,bb),meet(ml,bl,mb,bb)];if(pts.some(p=>!p))return null;
+ let xs=pts.map(p=>p[0]),ys=pts.map(p=>p[1]);if(Math.min(...xs)<2||Math.max(...xs)>w-2||Math.min(...ys)<2||Math.max(...ys)>h-2)return null;
+ let area=(Math.max(...xs)-Math.min(...xs))*(Math.max(...ys)-Math.min(...ys));if(area<.35*w*h)return null;
+ return pts.map(p=>[p[0]/w,p[1]/h]);
 }
 function quality(c){let w=120,h=Math.max(20,Math.round(120*c.height/c.width)),t=document.createElement('canvas');t.width=w;t.height=h;let x=t.getContext('2d');x.drawImage(c,0,0,w,h);let d=x.getImageData(0,0,w,h).data,m=0,a=[];for(let i=0;i<d.length;i+=4){let v=(d[i]+d[i+1]+d[i+2])/3;a.push(v);m+=v}m/=a.length;if(m<55)return'Quá tối';if(m>242)return'Quá sáng';let v=0,n=0;for(let y=1;y<h-1;y++)for(let z=1;z<w-1;z++){let p=y*w+z,L=4*a[p]-a[p-1]-a[p+1]-a[p-w]-a[p+w];v+=L*L;n++}return v/n<55?'Có thể bị mờ':''}
 async function openCamera(reset=true){if(reset){pages=[];current=0;}$('#cameraUI').classList.remove('hidden');autoOn=$('#autoCapture').checked;$('#camAuto').textContent=autoOn?'AUTO':'TAY';try{stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'},width:{ideal:4096},height:{ideal:4096}},audio:false});$('#camVideo').srcObject=stream;detected=null;stable=0;$('#camStatus').textContent='Căn tài liệu vừa màn hình';scanTimer=null}catch(e){toast('Không mở được camera');closeCamera();$('#picker').click()}}
