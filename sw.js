@@ -1,5 +1,5 @@
-const C='scanner-pro-v053pdfbalanced12';
-const SHELL=['./style.css?v=053pdfbalanced1','./app.js?v=053pdfbalanced1','./icon.svg','./manifest.webmanifest?v=053pdfbalanced1'];
+const C='scanner-pro-v053pdfsize12';
+const SHELL=['./style.css?v=053pdfsize1','./app.js?v=053pdfsize1','./icon.svg','./manifest.webmanifest?v=053pdfsize1'];
 
 self.addEventListener('install',e=>{
   self.skipWaiting();
