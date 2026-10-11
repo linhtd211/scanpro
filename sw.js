@@ -1,5 +1,5 @@
-const C='scanner-pro-v053pdfsize12';
-const SHELL=['./style.css?v=053pdfsize1','./app.js?v=053pdfsize1','./icon.svg','./manifest.webmanifest?v=053pdfsize1'];
+const C='scanner-pro-v054local1';
+const SHELL=['./','./index.html','./style.css?v=054local1','./app.js?v=054local1','./icon.svg','./manifest.webmanifest?v=054local1'];
 
 self.addEventListener('install',e=>{
   self.skipWaiting();
@@ -18,7 +18,7 @@ self.addEventListener('fetch',e=>{
   const req=e.request;
   if(req.method!=='GET') return;
   const url=new URL(req.url);
-  if(url.origin!==self.location.origin) return;
+  if(url.origin!==self.location.origin){e.respondWith(Response.error());return;}
 
   // Navigation/HTML: network first, never deliberately serve stale HTML while online.
   if(req.mode==='navigate'||req.destination==='document'){
@@ -27,7 +27,7 @@ self.addEventListener('fetch',e=>{
         const fresh=await fetch(req,{cache:'no-store'});
         return fresh;
       }catch(_){
-        const cached=await caches.match('./index.html');
+        const cached=await caches.match('./index.html')||await caches.match('./');
         return cached||Response.error();
       }
     })());
