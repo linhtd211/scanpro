@@ -80,7 +80,35 @@ function b64(u){let s=atob(u.split(',')[1]),a=new Uint8Array(s.length);for(let i
 async function makePDF(srcPages=pages){let imgs=[];for(let p of srcPages)imgs.push(await processed(p,undefined,true));let objs=[],kids=[],add=o=>(objs.push(o),objs.length);add('');add('');for(let i=0;i<imgs.length;i++){let im=imgs[i],bytes=b64(im.url),io=add({h:'<< /Type /XObject /Subtype /Image /Width '+im.w+' /Height '+im.h+' /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length '+bytes.length+' >>\nstream\n',bytes,t:'\nendstream'}),pw=595.28,ph=pw*im.h/im.w,dw=pw,dh=ph;let s='q '+dw+' 0 0 '+dh+' 0 0 cm /Im'+i+' Do Q',co=add('<< /Length '+s.length+' >>\nstream\n'+s+'\nendstream'),pg=add('<< /Type /Page /Parent 2 0 R /MediaBox [0 0 '+pw+' '+ph+'] /Resources << /XObject << /Im'+i+' '+io+' 0 R >> >> /Contents '+co+' 0 R >>');kids.push(pg+' 0 R')}objs[0]='<< /Type /Catalog /Pages 2 0 R >>';objs[1]='<< /Type /Pages /Kids ['+kids.join(' ')+'] /Count '+kids.length+' >>';let enc=new TextEncoder(),parts=[enc.encode('%PDF-1.4\n')],offs=[0],pos=parts[0].length;objs.forEach((o,i)=>{offs.push(pos);let a=enc.encode((i+1)+' 0 obj\n');parts.push(a);pos+=a.length;if(typeof o==='string'){a=enc.encode(o);parts.push(a);pos+=a.length}else{a=enc.encode(o.h);parts.push(a,o.bytes);pos+=a.length+o.bytes.length;a=enc.encode(o.t);parts.push(a);pos+=a.length}a=enc.encode('\nendobj\n');parts.push(a);pos+=a.length});let xr=pos,xt='xref\n0 '+(objs.length+1)+'\n0000000000 65535 f \n'+offs.slice(1).map(n=>String(n).padStart(10,'0')+' 00000 n \n').join('')+'trailer\n<< /Size '+(objs.length+1)+' /Root 1 0 R >>\nstartxref\n'+xr+'\n%%EOF';parts.push(enc.encode(xt));return new Blob(parts,{type:'application/pdf'})}
 async function sharePDF(srcPages=pages,name=$('#docName').value||'Scanner-Pro'){toast('Đang tạo PDF…');let blob=await makePDF(srcPages),file=new File([blob],name.replace(/[\\/:*?"<>|]/g,'-')+'.pdf',{type:'application/pdf'});if(navigator.share&&navigator.canShare?.({files:[file]}))await navigator.share({files:[file],title:name});else{let a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=file.name;a.click()}}
 let cacheDocs=[];async function refresh(){cacheDocs=(await DB.all()).sort((a,b)=>b.id-a.id);renderDocs()}
-$('#saveDoc').onclick=async()=>{let name=$('#docName').value.trim()||'Tài liệu',cat=$('#docCat').value,stored=[];toast('Đang lưu…');for(let p of pages){let z=await processed(p,.8);stored.push({src:z.url,master:masterSrc(p),orig:null,rot:p.rot,filter:p.filter,corners:p.corners?p.corners.map(q=>[...q]):null,warn:'',sourceW:p.sourceW,sourceH:p.sourceH})}await DB.put({id:Date.now(),name,cat,date:new Date().toLocaleString('vi-VN'),pages:stored});pages=[];await refresh();screen('home');toast('Đã lưu vào IndexedDB')};$('#exportPdf').onclick=()=>sharePDF();
+$('#saveDoc').onclick=async()=>{let name=$('#docName').value.trim()||'Tài liệu',cat=$('#docCat').value,stored=[];toast('Đang lưu…');for(let p of pages){let z=await processed(p,.8);stored.push({src:z.url,master:masterSrc(p),orig:null,rot:p.rot,filter:p.filter,corners:p.corners?p.corners.map(q=>[...q]):null,warn:'',sourceW:p.sourceW,sourceH:p.sourceH})}await DB.put({id:Date.now(),name,cat,date:new Date().toLocaleString('vi-VN'),pages:stored});pages=[];await refresh();screen('home');toast('Đã lưu vào IndexedDB')};let pdfPreviewUrl=null,pdfPreviewFile=null;
+function closePdfPreview(){
+ $('#pdfPreviewModal').classList.add('hidden');
+ $('#pdfPreviewFrame').removeAttribute('src');
+ if(pdfPreviewUrl){URL.revokeObjectURL(pdfPreviewUrl);pdfPreviewUrl=null}
+ pdfPreviewFile=null;
+}
+$('#pdfPreviewClose').onclick=closePdfPreview;
+$('#pdfPreviewShare').onclick=async()=>{
+ if(!pdfPreviewFile)return;
+ try{
+  if(navigator.share&&navigator.canShare?.({files:[pdfPreviewFile]}))await navigator.share({files:[pdfPreviewFile],title:pdfPreviewFile.name});
+  else{const a=document.createElement('a');a.href=pdfPreviewUrl;a.download=pdfPreviewFile.name;document.body.appendChild(a);a.click();a.remove()}
+ }catch(e){if(e?.name!=='AbortError')toast('Không chia sẻ được PDF: '+(e?.message||e))}
+};
+$('#exportPdf').onclick=async()=>{
+ const btn=$('#exportPdf');if(btn.disabled)return;
+ btn.disabled=true;btn.textContent='Đang tạo bản xem trước…';
+ try{
+  const blob=await makePDF();
+  const name=($('#docName').value.trim()||'Scanner-Pro').replace(/[\\/:*?"<>|]/g,'-');
+  closePdfPreview();
+  pdfPreviewFile=new File([blob],name+'.pdf',{type:'application/pdf'});
+  pdfPreviewUrl=URL.createObjectURL(blob);
+  $('#pdfPreviewFrame').src=pdfPreviewUrl;
+  $('#pdfPreviewModal').classList.remove('hidden');
+ }catch(e){toast('Lỗi xem trước PDF: '+(e?.message||e))}
+ finally{btn.disabled=false;btn.textContent='Xem trước & xuất PDF'}
+};
 function renderDocs(){let q=$('#search').value.toLowerCase(),d=cacheDocs.filter(x=>(activeCat==='Tất cả'||x.cat===activeCat)&&x.name.toLowerCase().includes(q));$('#empty').style.display=d.length?'none':'flex';$('#docs').innerHTML=d.map(x=>'<div class="doc" data-id="'+x.id+'"><img src="'+x.pages[0].src+'"><div class="meta"><b>'+x.name.replace(/</g,'&lt;')+'</b><small>'+x.pages.length+' trang · '+x.date+'</small><span class="tag">'+x.cat+'</span></div><span>›</span></div>').join('');$$('.doc').forEach(x=>x.onclick=()=>openDoc(+x.dataset.id))}
 $('#search').oninput=renderDocs;$$('#chips .chip').forEach(b=>b.onclick=()=>{activeCat=b.dataset.cat;$$('#chips .chip').forEach(x=>x.classList.toggle('on',x===b));renderDocs()});
 function openDoc(id){opened=cacheDocs.find(x=>x.id===id);if(!opened)return;$('#viewerTitle').textContent=opened.name;$('#viewerPages').innerHTML=opened.pages.map(p=>'<img src="'+p.src+'">').join('');screen('viewer')}$('#viewerBack').onclick=()=>screen('home');$('#viewerShare').onclick=()=>sharePDF(opened.pages,opened.name);$('#viewerMenu').onclick=async()=>{if(!opened)return;let n=prompt('Đổi tên tài liệu',opened.name);if(n===null)return;opened.name=n.trim()||opened.name;await DB.put(opened);await refresh();$('#viewerTitle').textContent=opened.name;toast('Đã đổi tên')};
