@@ -49,11 +49,12 @@ $('#picker').onchange=e=>{const files=[...e.target.files];e.target.value='';if(!
 let previewToken=0;
 async function renderFilteredPreview(p){
  const token=++previewToken, img=$('#mainImg');
- const source=p.src;
+ let source=p.src;
  img.src=source; // show sharp unmodified original immediately
- if(p.filter==='original')return;
+ if(p.filter==='original'&&!p.corners)return;
  try{
-  const original=await loadImg(source);if(token!==previewToken||pages[current]!==p)return;
+  let original=await loadImg(source);if(token!==previewToken||pages[current]!==p)return;
+  if(p.corners){const factor=Math.min(1,1500/Math.max(original.width,original.height)),sm=document.createElement('canvas');sm.width=Math.round(original.width*factor);sm.height=Math.round(original.height*factor);sm.getContext('2d').drawImage(original,0,0,sm.width,sm.height);original=homographyWarp(sm,p.corners,1500);source=original.toDataURL('image/jpeg',.94);if(token!==previewToken||pages[current]!==p)return;if(p.filter==='original'){img.src=source;return}}
   const c=document.createElement('canvas'),scale=Math.min(1,2400/Math.max(original.naturalWidth,original.naturalHeight));
   c.width=Math.max(1,Math.round(original.naturalWidth*scale));c.height=Math.max(1,Math.round(original.naturalHeight*scale));
   const ctx=c.getContext('2d',{alpha:false,willReadFrequently:true});ctx.imageSmoothingQuality='high';ctx.drawImage(original,0,0,c.width,c.height);
