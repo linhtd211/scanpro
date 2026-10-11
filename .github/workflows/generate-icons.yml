@@ -1,0 +1,36 @@
+name: Generate iPhone PWA icons
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/generate-icons.yml'
+      - 'icon.svg'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  icons:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install cairosvg
+      - name: Render PNG icons from SVG
+        run: |
+          python - <<'PY'
+          import cairosvg
+          for size in (180,192,512):
+              name = 'apple-touch-icon.png' if size == 180 else f'icon-{size}.png'
+              cairosvg.svg2png(url='icon.svg',write_to=name,output_width=size,output_height=size)
+          PY
+      - name: Commit generated icons
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add apple-touch-icon.png icon-192.png icon-512.png
+          if ! git diff --cached --quiet; then
+            git commit -m "Generate PNG PWA icons for iPhone"
+            git push
+          fi
